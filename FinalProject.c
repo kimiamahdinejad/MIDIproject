@@ -304,7 +304,7 @@ void ReadTracks(FILE* pointer)
 
 		if (TrackLengthCount != HT.length)
 		{
-			printf("No End of track call Found!\n");
+			printf("Invalid end of track found!\n");
 			exit(1);
 		}
 	}
