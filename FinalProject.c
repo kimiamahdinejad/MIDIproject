@@ -30,7 +30,8 @@ struct MyPlaylist
 
 struct Playlist
 {
-	char category[5];
+	int category;
+	char CM;
 	int TrackNumber;
 };
 
@@ -48,101 +49,93 @@ void main()
 	struct Playlist music;
 	struct MyPlaylist MyMusic;
 	int FilePoint;
+	char MIDIPlaylist[50];
 
-	printf("Choose your favorite playlist:\n1.Classic\n2.Pop\n3.Movies\n4.Hip-Hop\n5.My Playlist\n");
-
-	scanf("\n%s", music.category);
+	printf("Choose your favorite playlist or make your own:(C/M)\n");
+	scanf("\n%c", &music.CM);
 	
 	do
 	{
-		if (strcmp(music.category, "5") == 0)
+		if (music.CM == 'M')
 		{
-			printf("Would you like to make a playlist?(Y/N)\n");
-			scanf("\n%c", &MyMusic.existance);
-
-			if (MyMusic.existance == 'Y')
-			{
-				printf("Enter the name of your playlist:\n");
-				scanf("\n%s" , MyMusic.PlaylistName);
+			printf("Enter the name of your playlist:\n");
+			scanf("\n%s" , MyMusic.PlaylistName);
 				
-				do
-				{
-					printf("Enter the address of your file:\n");
-					scanf("\n%s", MyMusic.address);
+			FILE* point = fopen("playlists.txt", "a+");
+			fprintf(point, "\n%s", MyMusic.PlaylistName);
+			fclose(point);
 
-					printf("Enter the name of your file:\n");
-					scanf("\n%s", MyMusic.name);
-
-					printf("Enter the extension of your file:\n");
-					scanf("\n%s", MyMusic.extension);
-
-					if (strcmp(MyMusic.extension, ".mid") != 0)
-					{
-						printf("Invalid MIDI file!\n");
-						exit(1);
-					}
-
-					strcat(MIDIName, MyMusic.address);
-					strcat(MIDIName, MyMusic.name);
-					strcat(MIDIName, MyMusic.extension);
-
-					FILE* file = fopen(MyMusic.PlaylistName, "a+");
-					fprintf(file, "%s\n", MIDIName);
-					fclose(file);
-
-					printf("Would you like to add another?(Y/N)\n");
-					scanf("\n%c", &MyMusic.countinue);
-				} while (MyMusic.countinue == 'Y');
-			}
-			
-			printf("Would you like to play your playlist?(Y/N)\n");
-			scanf("\n%c" , &MyMusic.countinue);
-			
-			if (MyMusic.countinue == 'Y')
+			do
 			{
-				strcat(MyMusic.PlaylistName , ".txt");
-		
-				FILE* file = fopen(MyMusic.PlaylistName, "r");
+				printf("Enter the address of your file:\n");
+				scanf("\n%s", MyMusic.address);
 
-				printf("choose your favorite track:\n");
+				printf("Enter the name of your file:\n");
+				scanf("\n%s", MyMusic.name);
 
-				FilePoint = 1;
-				while(fscanf(file, "\n%s", MIDIName) != EOF)
+				printf("Enter the extension of your file:\n");
+				scanf("\n%s", MyMusic.extension);
+
+				if (strcmp(MyMusic.extension, ".mid") != 0)
 				{
-					printf("%d: %s\n", FilePoint++, MIDIName);
+					printf("Invalid MIDI file!\n");
+					exit(1);
 				}
+
+				strcat(MIDIName, MyMusic.address);
+				strcat(MIDIName, MyMusic.name);
+				
+				strcat(MyMusic.PlaylistName, ".txt");
+				
+				FILE* file = fopen(MyMusic.PlaylistName, "a+");
+				fprintf(file, "%s\n", MIDIName);
 				fclose(file);
 
-				scanf("%d", &music.TrackNumber);
-
-				FILE* infile = fopen(music.category, "r");
-
-				for (FilePoint = 1; FilePoint <= music.TrackNumber; FilePoint++)
-				{
-					fscanf(infile, "\n%s", MIDIName);
-				}
-
-				fclose(infile);
-			}
+				printf("Would you like to add another?(Y/N)\n");
+				scanf("\n%c", &MyMusic.countinue);
+			} while (MyMusic.countinue == 'Y');
 		}
 		else
 		{
-			strcat(music.category , ".txt");
+			printf("Choose your favorite playlist:\n");
+			
+			FILE* list = fopen("playlists.txt", "r");
+			
+			FilePoint = 1;
+			while (fscanf(list, "\n%s", MIDIPlaylist) != EOF)
+			{
+				printf("%d: %s\t", FilePoint++, MIDIPlaylist);
+			}
+			fclose(list);
+			
+			printf("\n");
+			
+			FILE* choose = fopen("playlists.txt", "r");
+			
+			scanf("%d", &music.category);
+
+			for (FilePoint = 1; FilePoint <= music.category; FilePoint++)
+			{
+				fscanf(choose, "\n%s", MIDIPlaylist);
+			}
+			fclose(choose);
+
+			strcat(MIDIPlaylist, ".txt");
 		
-			FILE* file = fopen(music.category, "r");
+			FILE* file = fopen(MIDIPlaylist, "r");
 
 			printf("choose your favorite track:\n");
 
 			FilePoint = 1;
 			while (fscanf(file, "\n%s", MIDIName) != EOF)
 			{
-				printf("%d: %s\n", FilePoint, MIDIName);
+				printf("%d: %s\n", FilePoint++, MIDIName);
 			}
 			fclose(file);
-
+			
 			scanf("%d", &music.TrackNumber);
 
-			FILE* infile = fopen(music.category, "r");
+			FILE* infile = fopen(MIDIPlaylist, "r");
 
 			for (FilePoint = 1; FilePoint <= music.TrackNumber; FilePoint++)
 			{
@@ -152,13 +145,14 @@ void main()
 			fclose(infile);
 		
 			strcat(MIDIName , ".mid");
+			
+			ReadMid();
 		}
-		ReadMid();
+		printf("Choose your favorite playlist or make your own or exit the program:(C/M/E)\n");
 
-		printf("Choose your favorite playlist:\n1.Classic\n2.Pop\n3.Movies\n4.Hip-Hop\n5.My Playlist\n6.Exit\n");
-		scanf("\n%c", &music.category);
+		scanf("\n%c", &music.CM);
 
-	} while (strcmp(music.category , "6"));
+	} while (music.CM != 'E');
 }
 
 void ReadMid()
@@ -210,27 +204,32 @@ void ReadTracks(FILE* pointer)
 	int flag, delta, note , tempo , i;
 	double frequancy, duration;
 
-	for (i = 0; i < HC.track; i++)
+	for (i = 1; i <= HC.track; i++)
 	{
-		TrackLengthCount = 0;
-
+		
 		/*reading track type*/
 		fread(HT.TrackType, 4, 1, pointer);
 
 		/*reading header track length*/
 		fread(&HT.length, 4, 1, pointer);
 		HT.length = ChangeEndian(HT.length);
+				
+		TrackLengthCount = 0;
 
-		printf("Track %d:\nTrack Type: %s\nTrack Length: %d\n", i, HT.TrackType, HT.length);
+		printf("Track %d:\nTrack Type: %s\nTrack Length: %d\n\n", i, HT.TrackType, HT.length);
 
 		/*reading events*/
 		do
 		{
 			delta = ReadDeltaTime(TrackLengthCount, pointer);
+			TrackLengthCount = ReturnByteCount();
+			
 			flag = FigureEvent(TrackLengthCount, pointer);
-
+			TrackLengthCount = ReturnByteCount();
+			
 			if (flag == 0)
 			{
+				printf("Invalid Event found!\n");
 				exit(1);
 			}
 			if (flag == 89)
@@ -239,7 +238,48 @@ void ReadTracks(FILE* pointer)
 				tempo = FigureTempo();
 				
 				frequancy = FigureFreq(note);
-
+				
+				if (frequancy < 100)
+				{
+					printf("_\n");
+				}
+				else if (frequancy < 200)
+				{
+					printf("__\n");
+				}
+				else if (frequancy < 300)
+				{
+					printf("___\n");
+				}
+				else if (frequancy < 400)
+				{
+					printf("____\n");
+				}
+				else if (frequancy < 500)
+				{
+					printf("_____\n");
+				}
+				else if (frequancy < 600)
+				{
+					printf("______\n");
+				}
+				else if (frequancy < 700)
+				{
+					printf("_______\n");
+				}
+				else if (frequancy < 800)
+				{
+					printf("________\n");
+				}
+				else if (frequancy < 900)
+				{
+					printf("_________\n");
+				}
+				else
+				{
+					printf("__________\n");
+				}
+				
 				duration = FigureDuration(tempo , HC.division , delta);
 
 				if (duration == 0)
@@ -249,9 +289,10 @@ void ReadTracks(FILE* pointer)
 					duration += 20;
 				}
 
-				Beep(frequancy, duration * 0.5);
+				Beep(frequancy, duration * 0.001);
 			}
-			if (ReturnByteCount() == HT.length)
+			
+			if (TrackLengthCount == HT.length)
 			{
 				if (flag != 1)
 				{
@@ -261,11 +302,10 @@ void ReadTracks(FILE* pointer)
 			}
 		} while (flag != 1);
 
-		if (ReturnByteCount() != HT.length)
+		if (TrackLengthCount != HT.length)
 		{
-			printf("Invalid End of track call!\n");
+			printf("No End of track call Found!\n");
 			exit(1);
 		}
 	}
 }
-

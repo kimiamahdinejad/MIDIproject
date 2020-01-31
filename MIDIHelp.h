@@ -1,6 +1,6 @@
 #include <stdio.h>
 
-int note , tempo;
+int note , tempo , Count;
 
 double FigureFreq(int NoteIndex)
 {
@@ -9,18 +9,25 @@ double FigureFreq(int NoteIndex)
 	return freq[NoteIndex - 12];
 }
 
-int ReadDeltaTime(FILE* pointer)
+int ReadDeltaTime(int ByteCount, FILE* pointer)
 {
 	unsigned long value;
 	unsigned char c;
 
-	if ((value = fgetc(pointer)) & 0x80) {
+	if ((value = fgetc(pointer)) & 0x80)
+	{
 		value &= 0x7F;
-		do {
+		ByteCount++;
+		
+		do
+		{
 			value = (value << 7) + ((c = getc(pointer)) & 0x7F);
+			ByteCount++;
 		} while (c & 0x80);
 	}
-
+	
+	Count = ByteCount;
+	
 	return (value);
 }
 
@@ -40,7 +47,7 @@ double FigureDuration(int tempo, int division, int delta)
 	return duration;
 }
 
-int FigureEvent(FILE* pointer)
+int FigureEvent(int ByteCount, FILE* pointer)
 {
 	int i;
 	unsigned char event, temp[3];
@@ -53,29 +60,53 @@ int FigureEvent(FILE* pointer)
 		fread(&note, 1, 1, pointer);
 		fread(temp, 1, 1, pointer);
 		
+		ByteCount += 2;
+		
+		Count = ByteCount;
+
 		return 89;
 	}
 	else if (event >= 0x90 && event < 0xA0)
 	{
 		fread(&note, 1, 1, pointer);
 		fread(temp, 1, 1, pointer);
+
+		ByteCount += 2;
+		
+		Count = ByteCount;
 	}
 	else if (event >= 0xA0 && event < 0xC0)
 	{
 		fread(temp, 2, 1, pointer);
+
+		ByteCount += 2;
+		
+		Count = ByteCount;
 	}
 	else if (event >= 0xC0 && event < 0xE0)
 	{
 		fread(temp, 1, 1, pointer);
+
+		ByteCount++;
+		
+		Count = ByteCount;
 	}
 	else if (event >= 0xE0 && event < 0xF0)
 	{
 		fread(temp, 2, 1, pointer);
+
+		ByteCount += 2;
+		
+		Count = ByteCount;
 	}
 	else if (event == 0xF0 || event == 0xF7)
 	{
 		fread(&length, 1, 1, pointer);
 		fread(temp, length, 1, pointer);
+
+		ByteCount += 1 + length;
+		
+		Count = ByteCount;
 	}
 	else if (event == 0xFF)
 	{
@@ -91,17 +122,29 @@ int FigureEvent(FILE* pointer)
 			}
 			
 			tempo = temp[0] << 16 | temp[1] << 8 | temp[2];
+
+			ByteCount += 2 + length;
+			
+			Count = ByteCount;
 		}
 		else if (event == 0x2f)
 		{
 			fread(temp, 1, 1, pointer);
 			
+			ByteCount += 2;
+			
+			Count = ByteCount;
+
 			return 1;
 		}
 		else
 		{
 			fread(&length, 1, 1, pointer);
 			fread(temp, length, 1, pointer);
+
+			ByteCount += 2 + length;
+			
+			Count = ByteCount;
 		}
 	}
 	else
@@ -125,4 +168,9 @@ int FigureTempo ()
 int ChangeEndian(int digit)
 {
 	return (((digit >> 24) & 0x000000ff | ((digit >> 8) & 0x0000ff00) | ((digit << 8) & 0x00ff0000) | ((digit << 24) & 0xff000000)));
+}
+
+int ReturnByteCount()
+{
+	return Count;
 }
